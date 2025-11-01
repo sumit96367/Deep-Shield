@@ -1,0 +1,16 @@
+[package]
+name = "ImageVerifier"
+version = "1.0.0"
+authors = []
+
+[addresses]
+verifier_admin = "0xb090137780fdb6561748c2f099d494d658ce277f44ed6c35ac7e5351c65b259e"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-framework.git"
+rev = "mainnet"
+subdir = "aptos-framework"
+
+[dev-dependencies]

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepfake Verifier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #667eea;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview-container {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .preview-container.show {
+            display: block;
+        }
+
+        .preview-image {
+            width: 100%;
+            border-radius: 15px;
+            max-height: 400px;
+            object-fit: contain;
+            background: #f8f9ff;
+        }
+
+        .button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            display: none;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.real {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+
+        .result.fake {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+
+        .result-error {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+        }
+
+        .result-header {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .result-details {
+            margin: 10px 0;
+            font-size: 1em;
+        }
+
+        .result-link {
+            margin-top: 15px;
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .result-link:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .reset-button {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+
+        .reset-button:hover:not(:disabled) {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Deepfake Verifier</h1>
+        <p class="subtitle">Verify images using AI and store results on Aptos blockchain</p>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">Drop your image here</div>
+            <div class="upload-hint">or click to browse</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+            <img id="previewImage" class="preview-image" alt="Preview">
+        </div>
+
+        <button class="button" id="verifyButton" disabled>Verify Image</button>
+
+        <div class="loading" id="loadingArea">
+            <div class="spinner"></div>
+            <p>Analyzing image with AI and submitting to blockchain...</p>
+        </div>
+
+        <div class="result" id="resultArea">
+            <div class="result-header" id="resultHeader"></div>
+            <div class="result-details" id="resultDetails"></div>
+            <a href="#" target="_blank" class="result-link" id="resultLink" style="display: none;"></a>
+            <button class="button reset-button" id="resetButton">Verify Another Image</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+
+        // Get DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const verifyButton = document.getElementById('verifyButton');
+        const loadingArea = document.getElementById('loadingArea');
+        const resultArea = document.getElementById('resultArea');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultHeader = document.getElementById('resultHeader');
+        const resultDetails = document.getElementById('resultDetails');
+        const resultLink = document.getElementById('resultLink');
+        const resetButton = document.getElementById('resetButton');
+
+        let selectedFile = null;
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file.');
+                return;
+            }
+
+            selectedFile = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewContainer.classList.add('show');
+                verifyButton.disabled = false;
+                resultArea.classList.remove('show');
+                errorMessage.classList.remove('show');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Verify button
+        verifyButton.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            // Hide previous results
+            resultArea.classList.remove('show');
+            errorMessage.classList.remove('show');
+            
+            // Show loading
+            loadingArea.classList.add('show');
+            verifyButton.disabled = true;
+
+            try {
+                // Create form data
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                // Send to API
+                const response = await fetch(`${API_URL}/verify`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Handle errors from API
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                showError(error.message || 'Failed to connect to the verification server. Is it running?');
+            } finally {
+                loadingArea.classList.remove('show');
+                verifyButton.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            const isFake = data.ai_verdict.is_deepfake;
+            const confidence = data.ai_verdict.confidence;
+            
+            // Set result type
+            resultArea.className = 'result show';
+            if (isFake) {
+                resultArea.classList.add('fake');
+                resultHeader.textContent = '❌ DEEPFAKE DETECTED';
+            } else {
+                resultArea.classList.add('real');
+                resultHeader.textContent = '✅ REAL IMAGE';
+            }
+
+            // Set details
+            resultDetails.innerHTML = `
+                <strong>Confidence:</strong> ${confidence}%<br>
+                <strong>Image Hash:</strong> ${data.image_hash_hex.substring(0, 16)}...<br>
+                <strong>Transaction Hash:</strong> ${data.blockchain_result.transaction_hash.substring(0, 16)}...
+            `;
+
+            // Set blockchain link
+            if (data.blockchain_result.explorer_url) {
+                resultLink.href = data.blockchain_result.explorer_url;
+                resultLink.textContent = 'View on Aptos Explorer';
+                resultLink.style.display = 'block';
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        // Reset button
+        resetButton.addEventListener('click', () => {
+            fileInput.value = '';
+            selectedFile = null;
+            previewContainer.classList.remove('show');
+            resultArea.classList.remove('show');
+            errorMessage.classList.remove('show');
+            verifyButton.disabled = true;
+        });
+    </script>
+</body>
+</html>
+
+
