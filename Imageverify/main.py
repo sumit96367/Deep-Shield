@@ -21,9 +21,17 @@ app = FastAPI(
 
 # --- Add CORS Middleware ---
 # This is required to allow our (future) HTML webpage to call this API
+import os
+
+# Get allowed origins from environment variable or use defaults
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000"  # Default for local development
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows all origins (unsafe for production, fine for hackathon)
+    allow_origins=ALLOWED_ORIGINS,  # Production-safe: only specified origins
     allow_credentials=True,
     allow_methods=["*"], # Allows all methods
     allow_headers=["*"], # Allows all headers
@@ -108,7 +116,7 @@ async def verify_image_endpoint(file: UploadFile = File(...)):
             },
             "blockchain_result": {
                 "transaction_hash": tx_hash,
-                "explorer_url": f"https://explorer.aptoslabs.com/txn/{tx_hash}?network=devnet"
+                "explorer_url": f"https://explorer.aptoslabs.com/txn/{tx_hash}?network=testnet"
             }
         }
 
@@ -151,4 +159,12 @@ async def check_hash_endpoint(hash_hex: str):
 if __name__ == "__main__":
     print("Starting FastAPI server...")
     # Make sure your `aptos_service.py` is configured before running this!
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    
+    # Get host and port from environment variables or use defaults
+    HOST = os.getenv("HOST", "0.0.0.0")  # 0.0.0.0 allows external connections
+    PORT = int(os.getenv("PORT", "8000"))
+    
+    print(f"Server will run on {HOST}:{PORT}")
+    print(f"Allowed CORS origins: {ALLOWED_ORIGINS}")
+    
+    uvicorn.run(app, host=HOST, port=PORT)

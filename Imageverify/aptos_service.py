@@ -15,15 +15,15 @@ from aptos_sdk.transactions import (
 # --- CRITICAL CONFIG ---
 # --- ------------------- ---
 # PASTE YOUR MODULE PUBLISHER ADDRESS (from aptos account list)
-MODULE_ADDRESS_STR = "0xb090137780fdb6561748c2f099d494d658ce277f44ed6c35ac7e5351c65b259e" 
+MODULE_ADDRESS_STR = "0x1bfd6b534cc0b44d9c8339286b494a5cfceefb6cec2e0868051644f94cc3517e" 
 
 # PASTE YOUR ACCOUNT PRIVATE KEY (from .aptos/config.yaml)
-ORACLE_PRIVATE_KEY_STR = "ed25519-priv-0x20b799e53c18e3ea32996630ceca9da09b37a7a1fd09105ccb196e3c30fd5b52" 
+ORACLE_PRIVATE_KEY_STR = "ed25519-priv-0x194e267c714fd81ee85cdb8474bb6663291d9cae63061abc838e92264f715abd" 
 # --- ------------------- ---
 # --- ------------------- ---
 
 # --- Constants ---
-NODE_URL = "https://fullnode.devnet.aptoslabs.com/v1" # Aptos Devnet
+NODE_URL = "https://fullnode.testnet.aptoslabs.com/v1" # Aptos Testnet
 
 # --- Global Clients (Initialized once) ---
 try:
@@ -78,33 +78,7 @@ async def register_verdict_on_chain(image_hash: bytes, is_fake: bool, confidence
         return tx_hash
     except Exception as e:
         print(f"Error submitting transaction: {e}")
-        error_str = str(e)
-        
-        # Extract simple error messages
-        if "E_VERDICT_ALREADY_EXISTS" in error_str or "already has a verdict" in error_str:
-            raise Exception("This image has already been verified on the blockchain.")
-        elif "insufficient balance" in error_str.lower():
-            raise Exception("Insufficient balance to complete the transaction.")
-        elif "timeout" in error_str.lower():
-            raise Exception("Transaction timed out. Please try again.")
-        elif "network" in error_str.lower() or "connection" in error_str.lower():
-            raise Exception("Network error. Please check your connection and try again.")
-        else:
-            # For other errors, try to extract a simple message from vm_status if present
-            import re
-            if "vm_status" in error_str:
-                # Try to find "Error: ..." pattern in vm_status
-                match = re.search(r'Error:\s*([^"]+)', error_str, re.IGNORECASE)
-                if match:
-                    message = match.group(1).strip().rstrip('"').rstrip("'")
-                    # Clean up any remaining quotes or brackets
-                    message = message.split('"')[0].split("'")[0].split('(')[0].strip()
-                    if message and len(message) < 150:
-                        raise Exception(message)
-                # Try to find "already has a verdict" pattern
-                if "already has a verdict" in error_str.lower():
-                    raise Exception("This image has already been verified on the blockchain.")
-            raise Exception("Transaction failed. Please try again.")
+        raise Exception(f"Transaction failed. Error: {e}")
     
 # file: aptos_service.py
 # ... all your other imports and code ...

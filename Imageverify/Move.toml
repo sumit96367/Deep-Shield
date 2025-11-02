@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-verifier_admin = "0xb090137780fdb6561748c2f099d494d658ce277f44ed6c35ac7e5351c65b259e"
+verifier_admin = "0x1bfd6b534cc0b44d9c8339286b494a5cfceefb6cec2e0868051644f94cc3517e"
 
 [dev-addresses]
 
