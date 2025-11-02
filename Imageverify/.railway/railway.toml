@@ -1,0 +1,4 @@
+# Railway configuration
+[build]
+dockerfilePath = "Dockerfile"
+
